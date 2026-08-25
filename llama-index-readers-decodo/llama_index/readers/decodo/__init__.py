@@ -1,3 +1,3 @@
-from llama_index.readers.decodo.base import DecodoReader, DecodoSearchReader
+from llama_index.readers.decodo.base import DecodoWebReader, DecodoSearchReader
 
-__all__ = ["DecodoReader", "DecodoSearchReader"]
+__all__ = ["DecodoWebReader", "DecodoSearchReader"]

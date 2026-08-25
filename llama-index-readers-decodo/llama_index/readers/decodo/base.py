@@ -94,7 +94,7 @@ def _call_api(
 # ---------------------------------------------------------------------------
 
 
-class DecodoReader(BaseReader):
+class DecodoWebReader(BaseReader):
     """
     Load one or more web pages via the Decodo Universal Scraper and return
     them as LlamaIndex :class:`~llama_index.core.schema.Document` objects.

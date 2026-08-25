@@ -1,5 +1,5 @@
 """
-Unit tests for DecodoReader and DecodoSearchReader.
+Unit tests for DecodoWebReader and DecodoSearchReader.
 
 All tests mock httpx — no network calls are made.
 """
@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from llama_index.readers.decodo.base import (
-    DecodoReader,
+    DecodoWebReader,
     DecodoSearchReader,
     _UNIFIED_ENDPOINT,
     _V2_ENDPOINT,
@@ -55,44 +55,44 @@ def _mock_post(response_data=None, status_code=200):
 
 
 # ---------------------------------------------------------------------------
-# DecodoReader — init
+# DecodoWebReader — init
 # ---------------------------------------------------------------------------
 
 
-class TestDecodoReaderInit:
+class TestDecodoWebReaderInit:
     def test_explicit_token_basic_mode(self):
-        reader = DecodoReader(api_token="mytoken", auth_mode="basic")
+        reader = DecodoWebReader(api_token="mytoken", auth_mode="basic")
         assert reader._auth_value == "mytoken"
         assert reader._endpoint == _V2_ENDPOINT
 
     def test_explicit_token_token_mode(self):
-        reader = DecodoReader(api_token="mytoken", auth_mode="token")
+        reader = DecodoWebReader(api_token="mytoken", auth_mode="token")
         assert reader._auth_value == "mytoken"
         assert reader._endpoint == _UNIFIED_ENDPOINT
 
     def test_env_var_token(self, monkeypatch):
         monkeypatch.setenv("DECODO_API_TOKEN", "env-token")
-        reader = DecodoReader()
+        reader = DecodoWebReader()
         assert reader._auth_value == "env-token"
 
     def test_missing_token_raises(self, monkeypatch):
         monkeypatch.delenv("DECODO_API_TOKEN", raising=False)
         with pytest.raises(ValueError, match="DECODO_API_TOKEN"):
-            DecodoReader()
+            DecodoWebReader()
 
     def test_invalid_auth_mode_raises(self):
         with pytest.raises(ValueError, match="auth_mode"):
-            DecodoReader(api_token="tok", auth_mode="wrong")
+            DecodoWebReader(api_token="tok", auth_mode="wrong")
 
 
 # ---------------------------------------------------------------------------
-# DecodoReader — load_data
+# DecodoWebReader — load_data
 # ---------------------------------------------------------------------------
 
 
-class TestDecodoReaderLoadData:
+class TestDecodoWebReaderLoadData:
     def test_returns_documents(self):
-        reader = DecodoReader(api_token="tok")
+        reader = DecodoWebReader(api_token="tok")
         mock_client = _mock_post(_make_api_response([
             {"url": "https://example.com", "content": "hello", "status_code": 200}
         ]))
@@ -102,7 +102,7 @@ class TestDecodoReaderLoadData:
         assert docs[0].text == "hello"
 
     def test_document_metadata_has_required_keys(self):
-        reader = DecodoReader(api_token="tok")
+        reader = DecodoWebReader(api_token="tok")
         mock_client = _mock_post(_make_api_response([
             {"url": "https://example.com", "content": "text", "status_code": 200}
         ]))
@@ -114,7 +114,7 @@ class TestDecodoReaderLoadData:
         assert "source" in meta
 
     def test_basic_mode_uses_v2_endpoint(self):
-        reader = DecodoReader(api_token="tok", auth_mode="basic")
+        reader = DecodoWebReader(api_token="tok", auth_mode="basic")
         mock_client = _mock_post()
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data(["https://example.com"])
@@ -122,7 +122,7 @@ class TestDecodoReaderLoadData:
         assert call_args[0][0] == _V2_ENDPOINT
 
     def test_token_mode_uses_unified_endpoint(self):
-        reader = DecodoReader(api_token="tok", auth_mode="token")
+        reader = DecodoWebReader(api_token="tok", auth_mode="token")
         mock_client = _mock_post()
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data(["https://example.com"])
@@ -130,7 +130,7 @@ class TestDecodoReaderLoadData:
         assert call_args[0][0] == _UNIFIED_ENDPOINT
 
     def test_sends_integration_header(self):
-        reader = DecodoReader(api_token="tok")
+        reader = DecodoWebReader(api_token="tok")
         mock_client = _mock_post()
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data(["https://example.com"])
@@ -138,7 +138,7 @@ class TestDecodoReaderLoadData:
         assert headers.get("x-integration") == "llamaindex"
 
     def test_continue_on_error_returns_error_document(self):
-        reader = DecodoReader(api_token="tok")
+        reader = DecodoWebReader(api_token="tok")
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_response.text = "Server Error"
@@ -156,7 +156,7 @@ class TestDecodoReaderLoadData:
         assert "Decodo scrape error" in docs[0].text
 
     def test_continue_on_error_false_raises(self):
-        reader = DecodoReader(api_token="tok")
+        reader = DecodoWebReader(api_token="tok")
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_response.text = "Server Error"
@@ -171,7 +171,7 @@ class TestDecodoReaderLoadData:
                 reader.load_data(["https://bad-url.com"], continue_on_error=False)
 
     def test_multiple_urls_returns_multiple_documents(self):
-        reader = DecodoReader(api_token="tok")
+        reader = DecodoWebReader(api_token="tok")
         mock_client = _mock_post(_make_api_response([
             {"url": "https://example.com", "content": "page1", "status_code": 200}
         ]))
