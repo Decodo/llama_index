@@ -12,8 +12,8 @@ DECODO_API_TOKEN : str
 
 Usage
 -----
->>> from llama_index.readers.decodo import DecodoReader, DecodoSearchReader
->>> reader = DecodoReader(api_token="your-token")
+>>> from llama_index.readers.decodo import DecodoWebReader, DecodoSearchReader
+>>> reader = DecodoWebReader(api_token="your-token")
 >>> docs = reader.load_data(["https://example.com", "https://news.ycombinator.com"])
 """
 
@@ -39,8 +39,9 @@ _INTEGRATION_HEADER = "llamaindex"
 _SEARCH_ENGINE_TARGETS: Dict[str, str] = {
     "google": "google_search",
     "amazon": "amazon_search",
-    "reddit": "reddit_subreddit",
+    "reddit": "google_search",  # reddit_subreddit requires a url param; use google_search with site filter
 }
+_REDDIT_SITE_FILTER = "site:reddit.com"
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +68,7 @@ def _call_api(
     auth_value: str,
     payload: Dict[str, Any],
     timeout: float,
+    auth_mode: str = "basic",
 ) -> Dict[str, Any]:
     """
     POST *payload* to the Decodo API endpoint and return parsed JSON.
@@ -76,8 +78,9 @@ def _call_api(
     RuntimeError
         If the server responds with a 4xx or 5xx status code.
     """
+    scheme = "Bearer" if auth_mode == "token" else "Basic"
     headers = {
-        "Authorization": f"Basic {auth_value}",
+        "Authorization": f"{scheme} {auth_value}",
         "x-integration": _INTEGRATION_HEADER,
     }
     with httpx.Client(timeout=timeout) as client:
@@ -117,8 +120,8 @@ class DecodoWebReader(BaseReader):
 
     Examples
     --------
-    >>> from llama_index.readers.decodo import DecodoReader
-    >>> reader = DecodoReader()
+    >>> from llama_index.readers.decodo import DecodoWebReader
+    >>> reader = DecodoWebReader()
     >>> docs = reader.load_data(["https://example.com"])
     >>> print(docs[0].text[:200])
     """
@@ -142,6 +145,7 @@ class DecodoWebReader(BaseReader):
             )
 
         self._auth_value = _build_auth_value(token, auth_mode)
+        self._auth_mode = auth_mode
         self._endpoint = _get_endpoint(auth_mode)
         self._timeout = timeout
 
@@ -182,7 +186,8 @@ class DecodoWebReader(BaseReader):
 
             try:
                 data = _call_api(
-                    self._endpoint, self._auth_value, payload, self._timeout
+                    self._endpoint, self._auth_value, payload, self._timeout,
+                    auth_mode=self._auth_mode,
                 )
             except RuntimeError as exc:
                 if not continue_on_error:
@@ -233,7 +238,7 @@ class DecodoSearchReader(BaseReader):
     ``"amazon"``
         Amazon product search.
     ``"reddit"``
-        Reddit subreddit/search (uses ``reddit_subreddit`` target).
+        Reddit search (uses Google Search with ``site:reddit.com`` filter).
 
     Parameters
     ----------
@@ -272,6 +277,7 @@ class DecodoSearchReader(BaseReader):
             )
 
         self._auth_value = _build_auth_value(token, auth_mode)
+        self._auth_mode = auth_mode
         self._endpoint = _get_endpoint(auth_mode)
         self._timeout = timeout
 
@@ -314,13 +320,20 @@ class DecodoSearchReader(BaseReader):
                 f"Supported engines: {supported}."
             )
 
+        effective_query = (
+            f"{_REDDIT_SITE_FILTER} {query}" if engine_lower == "reddit" else query
+        )
+
         payload: Dict[str, Any] = {
             "target": target,
-            "query": query,
+            "query": effective_query,
             "limit": num_results,
         }
 
-        data = _call_api(self._endpoint, self._auth_value, payload, self._timeout)
+        data = _call_api(
+            self._endpoint, self._auth_value, payload, self._timeout,
+            auth_mode=self._auth_mode,
+        )
 
         documents: List[Document] = []
         for result in data.get("results", []):

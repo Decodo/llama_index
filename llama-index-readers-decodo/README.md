@@ -20,21 +20,19 @@ export DECODO_API_TOKEN="your-token-here"
 
 ### Auth modes
 
-| `auth_mode` | Encoding | Endpoint |
+| `auth_mode` | Header scheme | Endpoint |
 |---|---|---|
-| `"basic"` (default) | `base64("token:")` | `POST /v2/scrape` |
-| `"token"` | plain token | `POST /unified/v1/scrape` |
+| `"basic"` (default) | `Authorization: Basic <base64(token:)>` | `POST /v2/scrape` |
+| `"token"` | `Authorization: Bearer <token>` | `POST /unified/v1/scrape` |
 
-Both modes use the `Authorization: Basic <value>` header.
-
-## DecodoReader
+## DecodoWebReader
 
 Load one or more URLs as LlamaIndex `Document` objects.
 
 ```python
-from llama_index.readers.decodo import DecodoReader
+from llama_index.readers.decodo import DecodoWebReader
 
-reader = DecodoReader()  # reads DECODO_API_TOKEN from env
+reader = DecodoWebReader()  # reads DECODO_API_TOKEN from env
 
 docs = reader.load_data([
     "https://news.ycombinator.com",
@@ -91,13 +89,13 @@ Each `Document` has metadata: `query`, `engine`, `target`, `url`, `status_code`,
 
 ```python
 # Basic mode (default)
-reader = DecodoReader(api_token="your-token", auth_mode="basic")
+reader = DecodoWebReader(api_token="your-token", auth_mode="basic")
 
 # Token mode
-reader = DecodoReader(api_token="your-token", auth_mode="token")
+reader = DecodoWebReader(api_token="your-token", auth_mode="token")
 
 # Custom timeout
-reader = DecodoReader(api_token="your-token", timeout=300.0)
+reader = DecodoWebReader(api_token="your-token", timeout=300.0)
 
 # Same options for DecodoSearchReader
 search_reader = DecodoSearchReader(api_token="your-token", auth_mode="token")
@@ -107,9 +105,9 @@ search_reader = DecodoSearchReader(api_token="your-token", auth_mode="token")
 
 ```python
 from llama_index.core import VectorStoreIndex
-from llama_index.readers.decodo import DecodoReader
+from llama_index.readers.decodo import DecodoWebReader
 
-reader = DecodoReader()
+reader = DecodoWebReader()
 docs = reader.load_data(["https://docs.example.com/guide"])
 index = VectorStoreIndex.from_documents(docs)
 query_engine = index.as_query_engine()

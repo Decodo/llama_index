@@ -114,8 +114,9 @@ class DecodoToolSpec(BaseToolSpec):
 
     def _call_api(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """POST *payload* to the appropriate Decodo endpoint and return JSON."""
+        scheme = "Bearer" if self._auth_mode == "token" else "Basic"
         headers = {
-            "Authorization": f"Basic {self._auth_value}",
+            "Authorization": f"{scheme} {self._auth_value}",
             "x-integration": _INTEGRATION_HEADER,
         }
         with httpx.Client(timeout=self._timeout) as client:
