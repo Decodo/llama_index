@@ -25,15 +25,20 @@ from llama_index.core.schema import Document
 # Constants
 # ---------------------------------------------------------------------------
 
-_API_URL = "https://scraper-api.decodo.com/v2/scrape"
+_V2_ENDPOINT = "https://scraper-api.decodo.com/v2/scrape"
+_UNIFIED_ENDPOINT = "https://scraper-api.decodo.com/unified/v1/scrape"
 _DEFAULT_TIMEOUT = 60.0  # seconds
+_INTEGRATION_HEADER = "llamaindex"
 
 # Maps human-readable engine names to Decodo target identifiers.
+# Reddit uses google_search with a site:reddit.com filter — the reddit_subreddit
+# target requires a subreddit url param, not a text query.
 _SEARCH_ENGINE_TARGETS: Dict[str, str] = {
     "google": "google_search",
     "amazon": "amazon_search",
-    "reddit": "reddit_subreddit",
+    "reddit": "google_search",
 }
+_REDDIT_SITE_FILTER = "site:reddit.com"
 
 
 # ---------------------------------------------------------------------------
@@ -41,15 +46,19 @@ _SEARCH_ENGINE_TARGETS: Dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 
-def _build_client(api_token: str) -> httpx.Client:
+def _build_client(api_token: str, auth_mode: str = "basic") -> httpx.Client:
     """Return a synchronous httpx client pre-configured for the Decodo API."""
+    scheme = "Bearer" if auth_mode == "token" else "Basic"
     return httpx.Client(
-        headers={"Authorization": f"Basic {api_token}"},
+        headers={
+            "Authorization": f"{scheme} {api_token}",
+            "x-integration": _INTEGRATION_HEADER,
+        },
         timeout=_DEFAULT_TIMEOUT,
     )
 
 
-def _scrape(client: httpx.Client, payload: Dict[str, Any]) -> Dict[str, Any]:
+def _scrape(client: httpx.Client, payload: Dict[str, Any], endpoint: str) -> Dict[str, Any]:
     """
     POST *payload* to the Decodo scrape endpoint and return the parsed JSON.
 
@@ -60,7 +69,7 @@ def _scrape(client: httpx.Client, payload: Dict[str, Any]) -> Dict[str, Any]:
     ValueError
         If the response JSON is missing the expected ``results`` key.
     """
-    response = client.post(_API_URL, json=payload)
+    response = client.post(endpoint, json=payload)
     response.raise_for_status()
     data: Dict[str, Any] = response.json()
     if "results" not in data:
@@ -109,6 +118,7 @@ class DecodoWebReader(BaseReader):
     def __init__(
         self,
         api_token: Optional[str] = None,
+        auth_mode: str = "basic",
         extra_payload: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.api_token: str = api_token or os.environ.get("DECODO_API_TOKEN", "")
@@ -117,6 +127,12 @@ class DecodoWebReader(BaseReader):
                 "A Decodo API token is required.  Pass api_token= or set the "
                 "DECODO_API_TOKEN environment variable."
             )
+        if auth_mode not in ("basic", "token"):
+            raise ValueError(
+                f"auth_mode must be 'basic' or 'token', got {auth_mode!r}."
+            )
+        self.auth_mode: str = auth_mode
+        self._endpoint: str = _UNIFIED_ENDPOINT if auth_mode == "token" else _V2_ENDPOINT
         self.extra_payload: Dict[str, Any] = extra_payload or {}
 
     # ------------------------------------------------------------------
@@ -148,7 +164,7 @@ class DecodoWebReader(BaseReader):
         """
         documents: List[Document] = []
 
-        with _build_client(self.api_token) as client:
+        with _build_client(self.api_token, self.auth_mode) as client:
             for url in urls:
                 payload: Dict[str, Any] = {
                     "target": "universal",
@@ -157,7 +173,7 @@ class DecodoWebReader(BaseReader):
                 }
 
                 try:
-                    data = _scrape(client, payload)
+                    data = _scrape(client, payload, self._endpoint)
                 except httpx.HTTPStatusError as exc:
                     # Surface the error as a Document so callers receive one
                     # Document per requested URL regardless of failures.
@@ -228,6 +244,7 @@ class DecodoSearchReader(BaseReader):
     def __init__(
         self,
         api_token: Optional[str] = None,
+        auth_mode: str = "basic",
         extra_payload: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.api_token: str = api_token or os.environ.get("DECODO_API_TOKEN", "")
@@ -236,6 +253,12 @@ class DecodoSearchReader(BaseReader):
                 "A Decodo API token is required.  Pass api_token= or set the "
                 "DECODO_API_TOKEN environment variable."
             )
+        if auth_mode not in ("basic", "token"):
+            raise ValueError(
+                f"auth_mode must be 'basic' or 'token', got {auth_mode!r}."
+            )
+        self.auth_mode: str = auth_mode
+        self._endpoint: str = _UNIFIED_ENDPOINT if auth_mode == "token" else _V2_ENDPOINT
         self.extra_payload: Dict[str, Any] = extra_payload or {}
 
     # ------------------------------------------------------------------
@@ -246,6 +269,7 @@ class DecodoSearchReader(BaseReader):
         self,
         query: str,
         engine: str = "google",
+        num_results: int = 10,
         *,
         extra_info: Optional[Dict[str, Any]] = None,
     ) -> List[Document]:
@@ -276,14 +300,19 @@ class DecodoSearchReader(BaseReader):
                 f"Supported engines: {supported}."
             )
 
+        effective_query = (
+            f"{_REDDIT_SITE_FILTER} {query}" if engine_lower == "reddit" else query
+        )
+
         payload: Dict[str, Any] = {
             "target": target,
-            "url": query,  # Decodo uses the 'url' field for query strings too
+            "query": effective_query,
+            "limit": num_results,
             **self.extra_payload,
         }
 
-        with _build_client(self.api_token) as client:
-            data = _scrape(client, payload)
+        with _build_client(self.api_token, self.auth_mode) as client:
+            data = _scrape(client, payload, self._endpoint)
 
         documents: List[Document] = []
         for result in data["results"]:

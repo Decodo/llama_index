@@ -36,14 +36,11 @@ from llama_index.core.tools.tool_spec.base import BaseToolSpec
 # Constants (mirrored from readers to keep this module self-contained)
 # ---------------------------------------------------------------------------
 
-_API_URL = "https://scraper-api.decodo.com/v2/scrape"
+_V2_ENDPOINT = "https://scraper-api.decodo.com/v2/scrape"
+_UNIFIED_ENDPOINT = "https://scraper-api.decodo.com/unified/v1/scrape"
 _DEFAULT_TIMEOUT = 60.0
-
-_SEARCH_ENGINE_TARGETS: Dict[str, str] = {
-    "google": "google_search",
-    "amazon": "amazon_search",
-    "reddit": "reddit_subreddit",
-}
+_INTEGRATION_HEADER = "llamaindex"
+_REDDIT_SITE_FILTER = "site:reddit.com"
 
 
 # ---------------------------------------------------------------------------
@@ -76,11 +73,12 @@ class DecodoToolSpec(BaseToolSpec):
     """
 
     # Names exposed to the agent framework.
-    spec_functions: List[str] = ["scrape_url", "search"]
+    spec_functions: List[str] = ["scrape_url", "search_web", "search_amazon", "search_reddit"]
 
     def __init__(
         self,
         api_token: Optional[str] = None,
+        auth_mode: str = "basic",
         extra_payload: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.api_token: str = api_token or os.environ.get("DECODO_API_TOKEN", "")
@@ -89,6 +87,12 @@ class DecodoToolSpec(BaseToolSpec):
                 "A Decodo API token is required.  Pass api_token= or set the "
                 "DECODO_API_TOKEN environment variable."
             )
+        if auth_mode not in ("basic", "token"):
+            raise ValueError(
+                f"auth_mode must be 'basic' or 'token', got {auth_mode!r}."
+            )
+        self.auth_mode: str = auth_mode
+        self._endpoint: str = _UNIFIED_ENDPOINT if auth_mode == "token" else _V2_ENDPOINT
         self.extra_payload: Dict[str, Any] = extra_payload or {}
 
     # ------------------------------------------------------------------
@@ -97,11 +101,15 @@ class DecodoToolSpec(BaseToolSpec):
 
     def _post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """POST *payload* to the Decodo API and return parsed JSON."""
+        scheme = "Bearer" if self.auth_mode == "token" else "Basic"
         with httpx.Client(
-            headers={"Authorization": f"Basic {self.api_token}"},
+            headers={
+                "Authorization": f"{scheme} {self.api_token}",
+                "x-integration": _INTEGRATION_HEADER,
+            },
             timeout=_DEFAULT_TIMEOUT,
         ) as client:
-            response = client.post(_API_URL, json={**payload, **self.extra_payload})
+            response = client.post(self._endpoint, json={**payload, **self.extra_payload})
             response.raise_for_status()
             data: Dict[str, Any] = response.json()
             if "results" not in data:
@@ -154,46 +162,92 @@ class DecodoToolSpec(BaseToolSpec):
         except Exception as exc:  # noqa: BLE001
             return f"[Decodo scrape error] {exc}"
 
-    def search(self, query: str, engine: str = "google") -> str:
+    def search_web(self, query: str, num_results: int = 10) -> str:
         """
-        Search the web and return results as text.
+        Search Google and return results as text.
 
-        Use this tool to find up-to-date information, news, product listings,
-        or community discussions without knowing a specific URL in advance.
+        Use this tool to find up-to-date information without knowing a
+        specific URL in advance.
 
         Parameters
         ----------
         query : str
-            The search query or keywords, e.g. ``"Python async best practices"``.
-        engine : str
-            Search engine to use.  One of:
-
-            * ``"google"``  — Google Search (default)
-            * ``"amazon"``  — Amazon product listings
-            * ``"reddit"``  — Reddit posts / subreddits
+            The search query or keywords.
+        num_results : int
+            Maximum number of results to return.  Default is 10.
 
         Returns
         -------
         str
-            Raw search result content in markdown format, or an error
-            description if the request failed.
+            Search result content, or an error description if the request failed.
         """
-        engine_lower = engine.lower()
-        target = _SEARCH_ENGINE_TARGETS.get(engine_lower)
-        if target is None:
-            supported = ", ".join(f'"{k}"' for k in _SEARCH_ENGINE_TARGETS)
-            return (
-                f"[Decodo tool error] Unsupported engine {engine!r}. "
-                f"Supported engines: {supported}."
-            )
-
         try:
-            data = self._post({"target": target, "url": query})
+            data = self._post({"target": "google_search", "query": query, "limit": num_results})
             return self._extract_content(data)
         except httpx.HTTPStatusError as exc:
             return (
                 f"[Decodo search error] HTTP {exc.response.status_code} "
-                f"for query={query!r} engine={engine!r}: {exc}"
+                f"for query={query!r}: {exc}"
+            )
+        except Exception as exc:  # noqa: BLE001
+            return f"[Decodo search error] {exc}"
+
+    def search_amazon(self, query: str, num_results: int = 10) -> str:
+        """
+        Search Amazon product listings and return results as text.
+
+        Use this tool to find product details, prices, and reviews on Amazon.
+
+        Parameters
+        ----------
+        query : str
+            The product search query.
+        num_results : int
+            Maximum number of results to return.  Default is 10.
+
+        Returns
+        -------
+        str
+            Search result content, or an error description if the request failed.
+        """
+        try:
+            data = self._post({"target": "amazon_search", "query": query, "limit": num_results})
+            return self._extract_content(data)
+        except httpx.HTTPStatusError as exc:
+            return (
+                f"[Decodo search error] HTTP {exc.response.status_code} "
+                f"for query={query!r}: {exc}"
+            )
+        except Exception as exc:  # noqa: BLE001
+            return f"[Decodo search error] {exc}"
+
+    def search_reddit(self, query: str, num_results: int = 10) -> str:
+        """
+        Search Reddit for posts and discussions matching *query*.
+
+        Uses Google Search with a ``site:reddit.com`` filter to find
+        relevant Reddit content.
+
+        Parameters
+        ----------
+        query : str
+            The search query.
+        num_results : int
+            Maximum number of results to return.  Default is 10.
+
+        Returns
+        -------
+        str
+            Search result content, or an error description if the request failed.
+        """
+        reddit_query = f"{_REDDIT_SITE_FILTER} {query}"
+        try:
+            data = self._post({"target": "google_search", "query": reddit_query, "limit": num_results})
+            return self._extract_content(data)
+        except httpx.HTTPStatusError as exc:
+            return (
+                f"[Decodo search error] HTTP {exc.response.status_code} "
+                f"for query={query!r}: {exc}"
             )
         except Exception as exc:  # noqa: BLE001
             return f"[Decodo search error] {exc}"

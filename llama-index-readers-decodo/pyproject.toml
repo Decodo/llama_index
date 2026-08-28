@@ -43,7 +43,7 @@ Homepage = "https://decodo.com"
 Repository = "https://github.com/run-llama/llama_index"
 
 [tool.llamahub]
-class_name = "DecodoReader"
+class_name = "DecodoWebReader"
 author = "Decodo"
 
 [tool.hatch.build.targets.wheel]
