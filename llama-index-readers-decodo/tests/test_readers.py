@@ -222,13 +222,14 @@ class TestDecodoSearchReaderLoadData:
         payload = mock_client.post.call_args[1]["json"]
         assert payload["target"] == "amazon_search"
 
-    def test_reddit_engine_maps_to_reddit_subreddit(self):
+    def test_reddit_engine_uses_google_search_with_site_filter(self):
         reader = DecodoSearchReader(api_token="tok")
         mock_client = _mock_post()
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data("machine learning", engine="reddit")
         payload = mock_client.post.call_args[1]["json"]
-        assert payload["target"] == "reddit_subreddit"
+        assert payload["target"] == "google_search"
+        assert "site:reddit.com" in payload["query"]
 
     def test_invalid_engine_raises(self):
         reader = DecodoSearchReader(api_token="tok")

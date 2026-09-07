@@ -172,7 +172,7 @@ class DecodoToolSpec(BaseToolSpec):
         str
             The rendered page content in markdown format.
         """
-        payload = {"target": "universal", "url": url}
+        payload = {"target": "universal", "url": url, "markdown": True}
         data = self._call_api(payload)
         return self._results_to_text(data)
 
@@ -200,6 +200,7 @@ class DecodoToolSpec(BaseToolSpec):
             "target": "google_search",
             "query": query,
             "limit": num_results,
+            "markdown": True,
         }
         data = self._call_api(payload)
         return self._results_to_list(data)
@@ -227,6 +228,7 @@ class DecodoToolSpec(BaseToolSpec):
             "target": "amazon_search",
             "query": query,
             "limit": num_results,
+            "markdown": True,
         }
         data = self._call_api(payload)
         return self._results_to_list(data)
@@ -256,6 +258,7 @@ class DecodoToolSpec(BaseToolSpec):
             "target": "google_search",
             "query": reddit_query,
             "limit": num_results,
+            "markdown": True,
         }
         data = self._call_api(payload)
         return self._results_to_list(data)

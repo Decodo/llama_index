@@ -182,6 +182,7 @@ class DecodoWebReader(BaseReader):
             payload: Dict[str, Any] = {
                 "target": "universal",
                 "url": url,
+                "markdown": True,
             }
 
             try:
@@ -328,6 +329,7 @@ class DecodoSearchReader(BaseReader):
             "target": target,
             "query": effective_query,
             "limit": num_results,
+            "markdown": True,
         }
 
         data = _call_api(
