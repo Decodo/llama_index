@@ -103,7 +103,7 @@ class DecodoWebReader(BaseReader):
     them as LlamaIndex :class:`~llama_index.core.schema.Document` objects.
 
     The scraper handles JavaScript rendering, anti-bot measures, and proxy
-    rotation automatically.  The response content (markdown) is stored as
+    rotation automatically.  The response content (raw HTML) is stored as
     ``Document.text``; the source URL, HTTP status code, and ``"source"``
     are stored in metadata.
 
