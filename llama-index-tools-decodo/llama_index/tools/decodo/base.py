@@ -47,7 +47,7 @@ class DecodoToolSpec(BaseToolSpec):
     Exposes four tools that can be handed to any LlamaIndex agent:
 
     ``scrape_url(url)``
-        Fetch and return the full rendered content of a web page as markdown.
+        Fetch and return the full rendered content of a web page as raw HTML.
 
     ``search_web(query, num_results)``
         Run a Google search and return a list of results.
@@ -157,7 +157,7 @@ class DecodoToolSpec(BaseToolSpec):
 
     def scrape_url(self, url: str) -> str:
         """
-        Scrape a web page and return its content as markdown text.
+        Scrape a web page and return its content as raw HTML.
 
         Use this tool whenever you need to read the current content of a
         specific web page, article, documentation page, or any URL.
@@ -170,7 +170,7 @@ class DecodoToolSpec(BaseToolSpec):
         Returns
         -------
         str
-            The rendered page content in markdown format.
+            The rendered page content as raw HTML.
         """
         payload = {"target": "universal", "url": url}
         data = self._call_api(payload)
