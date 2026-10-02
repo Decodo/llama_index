@@ -103,7 +103,7 @@ class DecodoWebReader(BaseReader):
     them as LlamaIndex :class:`~llama_index.core.schema.Document` objects.
 
     The scraper handles JavaScript rendering, anti-bot measures, and proxy
-    rotation automatically.  The response content (raw HTML) is stored as
+    rotation automatically.  The response content (markdown) is stored as
     ``Document.text``; the source URL, HTTP status code, and ``"source"``
     are stored in metadata.
 
@@ -182,6 +182,7 @@ class DecodoWebReader(BaseReader):
             payload: Dict[str, Any] = {
                 "target": "universal",
                 "url": url,
+                "markdown": True,
             }
 
             try:
@@ -310,6 +311,12 @@ class DecodoSearchReader(BaseReader):
             One Document per result entry returned by Decodo.  The
             ``metadata`` dict contains ``"query"``, ``"engine"``,
             ``"target"``, ``"url"``, ``"status_code"``, and ``"source"``.
+
+        Raises
+        ------
+        RuntimeError
+            If the request fails, or Decodo returns no results or only failed
+            ones (e.g. status 613).
         """
         engine_lower = engine.lower()
         target = _SEARCH_ENGINE_TARGETS.get(engine_lower)
@@ -328,6 +335,7 @@ class DecodoSearchReader(BaseReader):
             "target": target,
             "query": effective_query,
             "limit": num_results,
+            "markdown": True,
         }
 
         data = _call_api(
@@ -335,8 +343,15 @@ class DecodoSearchReader(BaseReader):
             auth_mode=self._auth_mode,
         )
 
+        results = data.get("results", [])
+        if not results or all(r.get("status_code", 0) >= 400 for r in results):
+            raise RuntimeError(
+                "Decodo could not scrape the search target "
+                f"(status {data.get('status_code')}): {data.get('message', 'no results returned')}"
+            )
+
         documents: List[Document] = []
-        for result in data.get("results", []):
+        for result in results:
             content: str = result.get("content", "")
             status_code: int = result.get("status_code", 0)
             result_url: str = result.get("url", "")

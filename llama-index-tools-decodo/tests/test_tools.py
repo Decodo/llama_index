@@ -284,3 +284,38 @@ class TestErrorHandling:
         with patch("llama_index.tools.decodo.base.httpx.Client", return_value=mock_client):
             with pytest.raises(RuntimeError, match="Decodo API error"):
                 spec.scrape_url("https://example.com")
+
+
+# ---------------------------------------------------------------------------
+# markdown output and failed scrapes
+# ---------------------------------------------------------------------------
+
+
+class TestMarkdownAndFailedScrapes:
+    @pytest.mark.parametrize(
+        "call",
+        [
+            lambda s: s.scrape_url("https://example.com"),
+            lambda s: s.search_web("q"),
+            lambda s: s.search_amazon("q"),
+            lambda s: s.search_reddit("q"),
+        ],
+    )
+    def test_requests_markdown(self, call):
+        spec = DecodoToolSpec(api_token="tok")
+        mock_client = _mock_post()
+        with patch("llama_index.tools.decodo.base.httpx.Client", return_value=mock_client):
+            call(spec)
+        assert mock_client.post.call_args[1]["json"]["markdown"] is True
+
+    @pytest.mark.parametrize(
+        "results",
+        [[], [{"url": "", "content": "", "status_code": 613}]],
+    )
+    @pytest.mark.parametrize("method", ["search_web", "search_amazon", "search_reddit"])
+    def test_search_raises_when_scrape_failed(self, method, results):
+        spec = DecodoToolSpec(api_token="tok")
+        mock_client = _mock_post(_make_api_response(results))
+        with patch("llama_index.tools.decodo.base.httpx.Client", return_value=mock_client):
+            with pytest.raises(RuntimeError, match="could not scrape"):
+                getattr(spec, method)("q")

@@ -44,14 +44,16 @@ tools = spec.to_tool_list()
 Use with a ReAct agent:
 
 ```python
-from llama_index.core.agent import ReActAgent
+import asyncio
+
+from llama_index.core.agent.workflow import ReActAgent
 from llama_index.llms.openai import OpenAI
 from llama_index.tools.decodo import DecodoToolSpec
 
 spec = DecodoToolSpec()
 tools = spec.to_tool_list()
-agent = ReActAgent.from_tools(tools, llm=OpenAI(model="gpt-4o"), verbose=True)
-response = agent.chat("Summarise the homepage of https://news.ycombinator.com")
+agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
+response = asyncio.run(agent.run("Summarise the homepage of https://news.ycombinator.com"))
 print(response)
 ```
 

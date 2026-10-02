@@ -128,6 +128,20 @@ class DecodoToolSpec(BaseToolSpec):
                 parts.append(content)
         return "\n\n---\n\n".join(parts) if parts else "(no content returned)"
 
+    @staticmethod
+    def _results_to_list(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Convert raw API response into a list of result dicts."""
+        out: List[Dict[str, Any]] = []
+        for result in data.get("results", []):
+            out.append(
+                {
+                    "url": result.get("url", ""),
+                    "content": result.get("content", ""),
+                    "status_code": result.get("status_code", 0),
+                }
+            )
+        return out
+
     # ------------------------------------------------------------------
     # Tool functions
     # ------------------------------------------------------------------
@@ -152,7 +166,7 @@ class DecodoToolSpec(BaseToolSpec):
             description if the page could not be fetched.
         """
         try:
-            data = self._post({"target": "universal", "url": url})
+            data = self._post({"target": "universal", "url": url, "markdown": True})
             return self._extract_content(data)
         except httpx.HTTPStatusError as exc:
             return (
@@ -162,9 +176,9 @@ class DecodoToolSpec(BaseToolSpec):
         except Exception as exc:  # noqa: BLE001
             return f"[Decodo scrape error] {exc}"
 
-    def search_web(self, query: str, num_results: int = 10) -> str:
+    def search_web(self, query: str, num_results: int = 10) -> List[Dict[str, Any]]:
         """
-        Search Google and return results as text.
+        Search Google and return a list of results.
 
         Use this tool to find up-to-date information without knowing a
         specific URL in advance.
@@ -178,23 +192,16 @@ class DecodoToolSpec(BaseToolSpec):
 
         Returns
         -------
-        str
-            Search result content, or an error description if the request failed.
+        list
+            Each item is a dict with keys ``url``, ``content``, and
+            ``status_code``.
         """
-        try:
-            data = self._post({"target": "google_search", "query": query, "limit": num_results})
-            return self._extract_content(data)
-        except httpx.HTTPStatusError as exc:
-            return (
-                f"[Decodo search error] HTTP {exc.response.status_code} "
-                f"for query={query!r}: {exc}"
-            )
-        except Exception as exc:  # noqa: BLE001
-            return f"[Decodo search error] {exc}"
+        data = self._post({"target": "google_search", "query": query, "limit": num_results, "markdown": True})
+        return self._results_to_list(data)
 
-    def search_amazon(self, query: str, num_results: int = 10) -> str:
+    def search_amazon(self, query: str, num_results: int = 10) -> List[Dict[str, Any]]:
         """
-        Search Amazon product listings and return results as text.
+        Search Amazon product listings and return results.
 
         Use this tool to find product details, prices, and reviews on Amazon.
 
@@ -207,21 +214,14 @@ class DecodoToolSpec(BaseToolSpec):
 
         Returns
         -------
-        str
-            Search result content, or an error description if the request failed.
+        list
+            Each item is a dict with keys ``url``, ``content``, and
+            ``status_code``.
         """
-        try:
-            data = self._post({"target": "amazon_search", "query": query, "limit": num_results})
-            return self._extract_content(data)
-        except httpx.HTTPStatusError as exc:
-            return (
-                f"[Decodo search error] HTTP {exc.response.status_code} "
-                f"for query={query!r}: {exc}"
-            )
-        except Exception as exc:  # noqa: BLE001
-            return f"[Decodo search error] {exc}"
+        data = self._post({"target": "amazon_search", "query": query, "limit": num_results, "markdown": True})
+        return self._results_to_list(data)
 
-    def search_reddit(self, query: str, num_results: int = 10) -> str:
+    def search_reddit(self, query: str, num_results: int = 10) -> List[Dict[str, Any]]:
         """
         Search Reddit for posts and discussions matching *query*.
 
@@ -237,17 +237,10 @@ class DecodoToolSpec(BaseToolSpec):
 
         Returns
         -------
-        str
-            Search result content, or an error description if the request failed.
+        list
+            Each item is a dict with keys ``url``, ``content``, and
+            ``status_code``.
         """
         reddit_query = f"{_REDDIT_SITE_FILTER} {query}"
-        try:
-            data = self._post({"target": "google_search", "query": reddit_query, "limit": num_results})
-            return self._extract_content(data)
-        except httpx.HTTPStatusError as exc:
-            return (
-                f"[Decodo search error] HTTP {exc.response.status_code} "
-                f"for query={query!r}: {exc}"
-            )
-        except Exception as exc:  # noqa: BLE001
-            return f"[Decodo search error] {exc}"
+        data = self._post({"target": "google_search", "query": reddit_query, "limit": num_results, "markdown": True})
+        return self._results_to_list(data)

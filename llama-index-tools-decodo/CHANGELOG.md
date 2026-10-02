@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1]
+
+- Request markdown output (`"markdown": true`) so `scrape_url` and the search tools return markdown instead of raw HTML
+- `search_web`, `search_amazon` and `search_reddit` raise `RuntimeError` when Decodo returns no results or only failed ones, instead of returning an empty list
+- README ReAct agent example updated to the `llama_index.core.agent.workflow.ReActAgent` API
+
 ## [0.1.0] - Initial release
 
 - `DecodoToolSpec` with `scrape_url`, `search_web`, `search_amazon`, and `search_reddit` tools

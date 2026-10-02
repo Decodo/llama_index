@@ -20,7 +20,7 @@ Decodo handles JavaScript rendering, anti-bot bypassing, CAPTCHA solving, and pr
 ## Installation
 
 ```bash
-pip install decodo-llamaindex
+pip install llama-index-readers-decodo llama-index-tools-decodo
 ```
 
 To use the examples you will also need an LLM provider package, e.g.:
@@ -53,7 +53,7 @@ reader = DecodoWebReader(api_token="your_token_here")
 
 ```python
 import os
-from decodo_llamaindex import DecodoWebReader
+from llama_index.readers.decodo import DecodoWebReader
 
 reader = DecodoWebReader()  # reads DECODO_API_TOKEN from env
 
@@ -69,7 +69,7 @@ for doc in docs:
 ### DecodoSearchReader — fetch search results into Documents
 
 ```python
-from decodo_llamaindex import DecodoSearchReader
+from llama_index.readers.decodo import DecodoSearchReader
 
 reader = DecodoSearchReader()
 
@@ -91,7 +91,7 @@ from llama_index.core import VectorStoreIndex
 from llama_index.core.settings import Settings
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
-from decodo_llamaindex import DecodoWebReader
+from llama_index.readers.decodo import DecodoWebReader
 
 Settings.llm = OpenAI(model="gpt-4o")
 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
@@ -117,23 +117,21 @@ See [`examples/rag_pipeline.ipynb`](examples/rag_pipeline.ipynb) for a complete 
 ### LlamaIndex Agent with DecodoToolSpec
 
 ```python
-import os
-from llama_index.core.agent import ReActAgent
+import asyncio
+from llama_index.core.agent.workflow import ReActAgent
 from llama_index.llms.openai import OpenAI
-from decodo_llamaindex import DecodoToolSpec
+from llama_index.tools.decodo import DecodoToolSpec
 
 spec = DecodoToolSpec()
 tools = spec.to_tool_list()
 
-agent = ReActAgent.from_tools(
-    tools,
-    llm=OpenAI(model="gpt-4o"),
-    verbose=True,
-)
+agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
 
-response = agent.chat(
-    "Search Google for 'Python async best practices 2025' "
-    "and summarise the top recommendations."
+response = asyncio.run(
+    agent.run(
+        "Search Google for 'Python async best practices 2025' "
+        "and summarise the top recommendations."
+    )
 )
 print(response)
 ```
