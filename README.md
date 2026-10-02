@@ -128,13 +128,16 @@ tools = spec.to_tool_list()
 
 agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
 
-response = asyncio.run(
-    agent.run(
+
+async def main() -> None:
+    response = await agent.run(
         "Search Google for 'Python async best practices 2025' "
         "and summarise the top recommendations."
     )
-)
-print(response)
+    print(response)
+
+
+asyncio.run(main())
 ```
 
 See [`examples/agent_example.py`](examples/agent_example.py) for a runnable script.

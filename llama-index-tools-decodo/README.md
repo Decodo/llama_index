@@ -57,8 +57,14 @@ from llama_index.tools.decodo import DecodoToolSpec
 spec = DecodoToolSpec()
 tools = spec.to_tool_list()
 agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
-response = asyncio.run(agent.run("Summarise the homepage of https://news.ycombinator.com"))
-print(response)
+
+
+async def main() -> None:
+    response = await agent.run("Summarise the homepage of https://news.ycombinator.com")
+    print(response)
+
+
+asyncio.run(main())
 ```
 
 ## Tool reference

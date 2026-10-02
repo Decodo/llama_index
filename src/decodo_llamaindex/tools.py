@@ -13,15 +13,19 @@ DECODO_API_TOKEN : str
 
 Usage
 -----
->>> from llama_index.core.agent import ReActAgent
+>>> import asyncio
+>>> from llama_index.core.agent.workflow import ReActAgent
 >>> from llama_index.llms.openai import OpenAI
 >>> from decodo_llamaindex import DecodoToolSpec
 >>>
 >>> spec = DecodoToolSpec()
->>> tools = spec.to_tool_list()
->>> agent = ReActAgent.from_tools(tools, llm=OpenAI(model="gpt-4o"), verbose=True)
->>> response = agent.chat("Summarise the homepage of https://news.ycombinator.com")
->>> print(response)
+>>> agent = ReActAgent(tools=spec.to_tool_list(), llm=OpenAI(model="gpt-4o"))
+>>>
+>>> async def main():
+...     response = await agent.run("Summarise the homepage of https://news.ycombinator.com")
+...     print(response)
+>>>
+>>> asyncio.run(main())
 """
 
 from __future__ import annotations
