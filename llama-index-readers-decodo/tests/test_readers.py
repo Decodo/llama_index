@@ -222,13 +222,14 @@ class TestDecodoSearchReaderLoadData:
         payload = mock_client.post.call_args[1]["json"]
         assert payload["target"] == "amazon_search"
 
-    def test_reddit_engine_maps_to_reddit_subreddit(self):
+    def test_reddit_engine_uses_google_search_with_site_filter(self):
         reader = DecodoSearchReader(api_token="tok")
         mock_client = _mock_post()
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data("machine learning", engine="reddit")
         payload = mock_client.post.call_args[1]["json"]
-        assert payload["target"] == "reddit_subreddit"
+        assert payload["target"] == "google_search"
+        assert "site:reddit.com" in payload["query"]
 
     def test_invalid_engine_raises(self):
         reader = DecodoSearchReader(api_token="tok")
@@ -277,3 +278,35 @@ class TestDecodoSearchReaderLoadData:
             reader.load_data("query", num_results=5)
         payload = mock_client.post.call_args[1]["json"]
         assert payload["limit"] == 5
+
+
+# ---------------------------------------------------------------------------
+# markdown output and failed scrapes
+# ---------------------------------------------------------------------------
+
+
+class TestMarkdownAndFailedScrapes:
+    def test_web_reader_requests_markdown(self):
+        reader = DecodoWebReader(api_token="tok")
+        mock_client = _mock_post()
+        with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
+            reader.load_data(["https://example.com"])
+        assert mock_client.post.call_args[1]["json"]["markdown"] is True
+
+    def test_search_reader_requests_markdown(self):
+        reader = DecodoSearchReader(api_token="tok")
+        mock_client = _mock_post()
+        with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
+            reader.load_data("query")
+        assert mock_client.post.call_args[1]["json"]["markdown"] is True
+
+    @pytest.mark.parametrize(
+        "results",
+        [[], [{"url": "", "content": "", "status_code": 613}]],
+    )
+    def test_search_reader_raises_when_scrape_failed(self, results):
+        reader = DecodoSearchReader(api_token="tok")
+        mock_client = _mock_post(_make_api_response(results))
+        with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
+            with pytest.raises(RuntimeError, match="could not scrape"):
+                reader.load_data("query")

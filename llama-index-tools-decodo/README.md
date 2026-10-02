@@ -29,7 +29,11 @@ Or pass it directly to the constructor.
 | `"basic"` (default) | `base64("token:")` | `POST /v2/scrape` |
 | `"token"` | plain token | `POST /unified/v1/scrape` |
 
-Both modes use the `Authorization: Basic <value>` header.
+`"basic"` sends `Authorization: Basic <token>`; `"token"` sends `Authorization: Bearer <token>`.
+Use `"basic"` with a username/password token and `"token"` with a Unified API key (a plain hex
+string). A key used in the wrong mode is rejected with a 401.
+
+All tools request markdown output.
 
 ## Quick start
 
@@ -44,15 +48,23 @@ tools = spec.to_tool_list()
 Use with a ReAct agent:
 
 ```python
-from llama_index.core.agent import ReActAgent
+import asyncio
+
+from llama_index.core.agent.workflow import ReActAgent
 from llama_index.llms.openai import OpenAI
 from llama_index.tools.decodo import DecodoToolSpec
 
 spec = DecodoToolSpec()
 tools = spec.to_tool_list()
-agent = ReActAgent.from_tools(tools, llm=OpenAI(model="gpt-4o"), verbose=True)
-response = agent.chat("Summarise the homepage of https://news.ycombinator.com")
-print(response)
+agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
+
+
+async def main() -> None:
+    response = await agent.run("Summarise the homepage of https://news.ycombinator.com")
+    print(response)
+
+
+asyncio.run(main())
 ```
 
 ## Tool reference
@@ -97,13 +109,20 @@ for r in results:
     print(r["url"], r["content"][:200])
 ```
 
+## Errors
+
+All tools raise `RuntimeError` on an HTTP error from the API. `search_web`, `search_amazon` and
+`search_reddit` also raise it when Decodo returns no results or only failed ones (for example
+status `613`, "We were not able to scrape the target"), so an agent can retry instead of reading
+an empty list as "no results".
+
 ## Auth mode examples
 
 ```python
-# Basic mode (default) — recommended for most users
+# Basic mode (default) — username/password token
 spec = DecodoToolSpec(api_token="your-token", auth_mode="basic")
 
-# Token mode — for unified API access
+# Token mode — Unified API key
 spec = DecodoToolSpec(api_token="your-token", auth_mode="token")
 
 # Custom timeout (seconds)

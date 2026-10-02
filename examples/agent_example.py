@@ -7,7 +7,7 @@ The agent can browse live URLs and run web searches to answer questions.
 
 Prerequisites
 -------------
-pip install decodo-llamaindex llama-index-llms-openai
+pip install llama-index-tools-decodo llama-index-llms-openai
 
 Environment variables
 ---------------------
@@ -19,13 +19,13 @@ Run
 python examples/agent_example.py
 """
 
+import asyncio
 import os
 
-from llama_index.core.agent import ReActAgent
+from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.settings import Settings
 from llama_index.llms.openai import OpenAI
-
-from decodo_llamaindex import DecodoToolSpec
+from llama_index.tools.decodo import DecodoToolSpec
 
 # ---------------------------------------------------------------------------
 # 1. Configure the LLM
@@ -40,11 +40,7 @@ Settings.llm = OpenAI(
 # 2. Build the Decodo tool spec and convert to LlamaIndex tools
 # ---------------------------------------------------------------------------
 
-spec = DecodoToolSpec(
-    api_token=os.environ["DECODO_API_TOKEN"],
-    # Optional: pin all requests to a US geo-location
-    # extra_payload={"geo": "us"},
-)
+spec = DecodoToolSpec(api_token=os.environ["DECODO_API_TOKEN"])
 
 tools = spec.to_tool_list()
 
@@ -56,12 +52,7 @@ for tool in tools:
 # 3. Create the agent
 # ---------------------------------------------------------------------------
 
-agent = ReActAgent.from_tools(
-    tools,
-    llm=Settings.llm,
-    verbose=True,
-    max_iterations=10,
-)
+agent = ReActAgent(tools=tools, llm=Settings.llm)
 
 # ---------------------------------------------------------------------------
 # 4. Run example queries
@@ -75,9 +66,13 @@ QUERIES = [
     "one-paragraph summary of what asyncio does.",
 ]
 
-for query in QUERIES:
-    print("\n" + "=" * 70)
-    print(f"QUERY: {query}")
-    print("=" * 70)
-    response = agent.chat(query)
-    print(f"\nANSWER:\n{response}")
+async def main() -> None:
+    for query in QUERIES:
+        print("\n" + "=" * 70)
+        print(f"QUERY: {query}")
+        print("=" * 70)
+        response = await agent.run(query)
+        print(f"\nANSWER:\n{response}")
+
+
+asyncio.run(main())
