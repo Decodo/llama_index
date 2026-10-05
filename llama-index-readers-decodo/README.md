@@ -25,6 +25,10 @@ export DECODO_API_TOKEN="your-token-here"
 | `"basic"` (default) | `Authorization: Basic <base64(token:)>` | `POST /v2/scrape` |
 | `"token"` | `Authorization: Bearer <token>` | `POST /unified/v1/scrape` |
 
+A Unified API key (a plain hex string) only works with `auth_mode="token"`; with the default
+`"basic"` mode it is rejected with a 401. Both readers request markdown output, so
+`Document.text` is markdown rather than raw HTML.
+
 ## DecodoWebReader
 
 Load one or more URLs as LlamaIndex `Document` objects.
@@ -84,6 +88,11 @@ for doc in docs:
 ```
 
 Each `Document` has metadata: `query`, `engine`, `target`, `url`, `status_code`, and `source`.
+
+`load_data` raises `RuntimeError` on an HTTP error, and also when Decodo returns no results or
+only failed ones (for example status `613`), rather than returning an empty list. The Reddit
+engine uses Google Search with a `site:reddit.com` filter, so it can occasionally fail this way;
+retrying usually succeeds.
 
 ## Auth mode examples
 

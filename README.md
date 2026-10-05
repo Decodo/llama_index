@@ -1,7 +1,7 @@
 # decodo-llamaindex
 
 [LlamaIndex](https://www.llamaindex.ai/) integration for the [Decodo Web Scraping API](https://decodo.com).
-Load live web pages and search-engine results into your RAG pipelines, or give LlamaIndex agents real-time browsing capabilities — all through a single, type-safe Python package.
+Load live web pages and search-engine results into your RAG pipelines, or give LlamaIndex agents real-time browsing capabilities — through two Python packages.
 
 ---
 
@@ -20,7 +20,7 @@ Decodo handles JavaScript rendering, anti-bot bypassing, CAPTCHA solving, and pr
 ## Installation
 
 ```bash
-pip install decodo-llamaindex
+pip install llama-index-readers-decodo llama-index-tools-decodo
 ```
 
 To use the examples you will also need an LLM provider package, e.g.:
@@ -39,10 +39,11 @@ Get your API token from the [Decodo dashboard](https://app.decodo.com) and expor
 export DECODO_API_TOKEN="your_token_here"
 ```
 
-All classes read `DECODO_API_TOKEN` from the environment by default.  You can also pass it explicitly:
+All classes read `DECODO_API_TOKEN` from the environment by default.  You can also pass it explicitly. A Unified API key (a plain hex string) needs `auth_mode="token"`:
 
 ```python
 reader = DecodoWebReader(api_token="your_token_here")
+reader = DecodoWebReader(api_token="your_api_key", auth_mode="token")
 ```
 
 ---
@@ -53,7 +54,7 @@ reader = DecodoWebReader(api_token="your_token_here")
 
 ```python
 import os
-from decodo_llamaindex import DecodoWebReader
+from llama_index.readers.decodo import DecodoWebReader
 
 reader = DecodoWebReader()  # reads DECODO_API_TOKEN from env
 
@@ -69,7 +70,7 @@ for doc in docs:
 ### DecodoSearchReader — fetch search results into Documents
 
 ```python
-from decodo_llamaindex import DecodoSearchReader
+from llama_index.readers.decodo import DecodoSearchReader
 
 reader = DecodoSearchReader()
 
@@ -91,7 +92,7 @@ from llama_index.core import VectorStoreIndex
 from llama_index.core.settings import Settings
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
-from decodo_llamaindex import DecodoWebReader
+from llama_index.readers.decodo import DecodoWebReader
 
 Settings.llm = OpenAI(model="gpt-4o")
 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
@@ -117,25 +118,26 @@ See [`examples/rag_pipeline.ipynb`](examples/rag_pipeline.ipynb) for a complete 
 ### LlamaIndex Agent with DecodoToolSpec
 
 ```python
-import os
-from llama_index.core.agent import ReActAgent
+import asyncio
+from llama_index.core.agent.workflow import ReActAgent
 from llama_index.llms.openai import OpenAI
-from decodo_llamaindex import DecodoToolSpec
+from llama_index.tools.decodo import DecodoToolSpec
 
 spec = DecodoToolSpec()
 tools = spec.to_tool_list()
 
-agent = ReActAgent.from_tools(
-    tools,
-    llm=OpenAI(model="gpt-4o"),
-    verbose=True,
-)
+agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
 
-response = agent.chat(
-    "Search Google for 'Python async best practices 2025' "
-    "and summarise the top recommendations."
-)
-print(response)
+
+async def main() -> None:
+    response = await agent.run(
+        "Search Google for 'Python async best practices 2025' "
+        "and summarise the top recommendations."
+    )
+    print(response)
+
+
+asyncio.run(main())
 ```
 
 See [`examples/agent_example.py`](examples/agent_example.py) for a runnable script.
@@ -144,85 +146,57 @@ See [`examples/agent_example.py`](examples/agent_example.py) for a runnable scri
 
 ## API Reference
 
-### `DecodoWebReader`
+The integration ships as two packages. Each takes `api_token`, `auth_mode` and `timeout`.
 
-```python
-DecodoWebReader(
-    api_token: str | None = None,       # default: DECODO_API_TOKEN env var
-    extra_payload: dict | None = None,  # merged into every API request body
-)
-```
+| Argument | Default | Description |
+|---|---|---|
+| `api_token` | `DECODO_API_TOKEN` env var | Decodo credential |
+| `auth_mode` | `"basic"` | `"basic"` sends `Authorization: Basic` to `/v2/scrape`; `"token"` sends `Authorization: Bearer` to `/unified/v1/scrape`. A Unified API key (plain hex string) needs `"token"`. |
+| `timeout` | `180.0` | HTTP timeout in seconds |
 
-**Methods**
+### `DecodoWebReader` (`llama-index-readers-decodo`)
 
 | Method | Returns | Description |
 |---|---|---|
-| `load_data(urls, *, extra_info=None)` | `list[Document]` | Scrape each URL, one Document per result |
+| `load_data(urls, continue_on_error=True)` | `list[Document]` | Scrape each URL; failed URLs become error Documents unless `continue_on_error=False` |
 
-**Document metadata fields:** `url`, `status_code`
+**Document metadata:** `url`, `status_code`, `source`
 
----
-
-### `DecodoSearchReader`
-
-```python
-DecodoSearchReader(
-    api_token: str | None = None,
-    extra_payload: dict | None = None,
-)
-```
-
-**Methods**
+### `DecodoSearchReader` (`llama-index-readers-decodo`)
 
 | Method | Returns | Description |
 |---|---|---|
-| `load_data(query, engine="google", *, extra_info=None)` | `list[Document]` | Run a search, one Document per result block |
+| `load_data(query, engine="google", num_results=10)` | `list[Document]` | Run a search; raises `RuntimeError` if Decodo returns no results or only failed ones |
 
-Supported `engine` values: `"google"`, `"amazon"`, `"reddit"`.
+Supported `engine` values: `"google"`, `"amazon"`, `"reddit"` (Google with a `site:reddit.com` filter).
 
-**Document metadata fields:** `query`, `engine`, `target`, `url`, `status_code`
+**Document metadata:** `query`, `engine`, `target`, `url`, `status_code`, `source`
 
----
-
-### `DecodoToolSpec`
-
-```python
-DecodoToolSpec(
-    api_token: str | None = None,
-    extra_payload: dict | None = None,
-)
-```
-
-**Registered tool functions**
+### `DecodoToolSpec` (`llama-index-tools-decodo`)
 
 | Function | Signature | Description |
 |---|---|---|
-| `scrape_url` | `(url: str) -> str` | Fetch and return a web page as markdown |
-| `search` | `(query: str, engine: str = "google") -> str` | Run a web search and return results as text |
+| `scrape_url` | `(url: str) -> str` | Fetch a web page as markdown |
+| `search_web` | `(query: str, num_results: int = 10) -> list[dict]` | Google search |
+| `search_amazon` | `(query: str, num_results: int = 10) -> list[dict]` | Amazon product search |
+| `search_reddit` | `(query: str, num_results: int = 10) -> list[dict]` | Google search with a `site:reddit.com` filter |
 
-Convert to LlamaIndex tools with `spec.to_tool_list()`.
+Search functions return dicts with `url`, `content` and `status_code`, and raise `RuntimeError`
+if Decodo returns no results or only failed ones. Convert to LlamaIndex tools with `spec.to_tool_list()`.
 
 ---
 
 ## Project Layout
 
 ```
-integrations/llamaindex/
-├── pyproject.toml
-├── README.md
-├── src/
-│   └── decodo_llamaindex/
-│       ├── __init__.py
-│       ├── readers.py
-│       └── tools.py
+├── llama-index-readers-decodo/   # DecodoWebReader, DecodoSearchReader
+├── llama-index-tools-decodo/     # DecodoToolSpec
 └── examples/
     ├── rag_pipeline.ipynb
     └── agent_example.py
 ```
 
 ---
-
-> **Manual steps:** See [MANUAL_STEPS.md](../MANUAL_STEPS.md) (gitignored).
 
 ## License
 

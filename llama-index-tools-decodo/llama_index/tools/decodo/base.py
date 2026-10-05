@@ -47,7 +47,7 @@ class DecodoToolSpec(BaseToolSpec):
     Exposes four tools that can be handed to any LlamaIndex agent:
 
     ``scrape_url(url)``
-        Fetch and return the full rendered content of a web page as raw HTML.
+        Fetch and return the full rendered content of a web page as markdown.
 
     ``search_web(query, num_results)``
         Run a Google search and return a list of results.
@@ -129,7 +129,21 @@ class DecodoToolSpec(BaseToolSpec):
 
     @staticmethod
     def _results_to_list(data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Convert raw API response into a list of result dicts."""
+        """Convert raw API response into a list of result dicts.
+
+        Raises
+        ------
+        RuntimeError
+            If the API answered HTTP 200 but returned no results or only
+            failed ones (e.g. status 613, "unable to scrape the target"), so
+            an agent sees a retryable failure instead of "no results".
+        """
+        results = data.get("results", [])
+        if not results or all(r.get("status_code", 0) >= 400 for r in results):
+            raise RuntimeError(
+                "Decodo could not scrape the target "
+                f"(status {data.get('status_code')}): {data.get('message', 'no results returned')}"
+            )
         out: List[Dict[str, Any]] = []
         for result in data.get("results", []):
             out.append(
@@ -157,7 +171,7 @@ class DecodoToolSpec(BaseToolSpec):
 
     def scrape_url(self, url: str) -> str:
         """
-        Scrape a web page and return its content as raw HTML.
+        Scrape a web page and return its content as markdown text.
 
         Use this tool whenever you need to read the current content of a
         specific web page, article, documentation page, or any URL.
@@ -170,9 +184,9 @@ class DecodoToolSpec(BaseToolSpec):
         Returns
         -------
         str
-            The rendered page content as raw HTML.
+            The rendered page content in markdown format.
         """
-        payload = {"target": "universal", "url": url}
+        payload = {"target": "universal", "url": url, "markdown": True}
         data = self._call_api(payload)
         return self._results_to_text(data)
 
@@ -200,6 +214,7 @@ class DecodoToolSpec(BaseToolSpec):
             "target": "google_search",
             "query": query,
             "limit": num_results,
+            "markdown": True,
         }
         data = self._call_api(payload)
         return self._results_to_list(data)
@@ -227,6 +242,7 @@ class DecodoToolSpec(BaseToolSpec):
             "target": "amazon_search",
             "query": query,
             "limit": num_results,
+            "markdown": True,
         }
         data = self._call_api(payload)
         return self._results_to_list(data)
@@ -256,6 +272,7 @@ class DecodoToolSpec(BaseToolSpec):
             "target": "google_search",
             "query": reddit_query,
             "limit": num_results,
+            "markdown": True,
         }
         data = self._call_api(payload)
         return self._results_to_list(data)
