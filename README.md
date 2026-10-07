@@ -33,17 +33,23 @@ pip install llama-index-llms-openai llama-index-embeddings-openai
 
 ## Authentication
 
-Get your API token from the [Decodo dashboard](https://app.decodo.com) and export it:
+Copy your Web Data API key from your Web Data API subscription on the [Decodo dashboard](https://dashboard.decodo.com/web-data/playground) and export it:
 
 ```bash
-export DECODO_API_TOKEN="your_token_here"
+export DECODO_API_TOKEN="your_api_key"
 ```
 
-All classes read `DECODO_API_TOKEN` from the environment by default.  You can also pass it explicitly. A Unified API key (a plain hex string) needs `auth_mode="token"`:
+All classes read `DECODO_API_TOKEN` from the environment by default. You can also pass it explicitly. Pass `auth_mode="token"` so the key is sent as a Bearer token:
 
 ```python
-reader = DecodoWebReader(api_token="your_token_here")
+reader = DecodoWebReader(auth_mode="token")
 reader = DecodoWebReader(api_token="your_api_key", auth_mode="token")
+```
+
+Older plans only have a basic authentication token. That is the default `auth_mode="basic"`, so omit `auth_mode`:
+
+```python
+reader = DecodoWebReader(api_token="your_basic_auth_token")
 ```
 
 ---
@@ -56,7 +62,7 @@ reader = DecodoWebReader(api_token="your_api_key", auth_mode="token")
 import os
 from llama_index.readers.decodo import DecodoWebReader
 
-reader = DecodoWebReader()  # reads DECODO_API_TOKEN from env
+reader = DecodoWebReader(auth_mode="token")  # reads DECODO_API_TOKEN from env
 
 docs = reader.load_data([
     "https://news.ycombinator.com",
@@ -72,7 +78,7 @@ for doc in docs:
 ```python
 from llama_index.readers.decodo import DecodoSearchReader
 
-reader = DecodoSearchReader()
+reader = DecodoSearchReader(auth_mode="token")
 
 # Google Search
 google_docs = reader.load_data("open source LLMs 2025", engine="google")
@@ -98,7 +104,7 @@ Settings.llm = OpenAI(model="gpt-4o")
 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
 # 1. Load documents
-reader = DecodoWebReader()
+reader = DecodoWebReader(auth_mode="token")
 docs = reader.load_data([
     "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
     "https://en.wikipedia.org/wiki/Transformer_(deep_learning_architecture)",
@@ -123,7 +129,7 @@ from llama_index.core.agent.workflow import ReActAgent
 from llama_index.llms.openai import OpenAI
 from llama_index.tools.decodo import DecodoToolSpec
 
-spec = DecodoToolSpec()
+spec = DecodoToolSpec(auth_mode="token")
 tools = spec.to_tool_list()
 
 agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
@@ -150,8 +156,8 @@ The integration ships as two packages. Each takes `api_token`, `auth_mode` and `
 
 | Argument | Default | Description |
 |---|---|---|
-| `api_token` | `DECODO_API_TOKEN` env var | Decodo credential |
-| `auth_mode` | `"basic"` | `"basic"` sends `Authorization: Basic` to `/v2/scrape`; `"token"` sends `Authorization: Bearer` to `/unified/v1/scrape`. A Unified API key (plain hex string) needs `"token"`. |
+| `api_token` | `DECODO_API_TOKEN` env var | Web Data API key, or a basic auth token on older plans |
+| `auth_mode` | `"basic"` | `"basic"` sends `Authorization: Basic` to `/v2/scrape`; `"token"` sends `Authorization: Bearer` to `/unified/v1/scrape`. Use `"token"` with a Web Data API key. |
 | `timeout` | `180.0` | HTTP timeout in seconds |
 
 ### `DecodoWebReader` (`llama-index-readers-decodo`)

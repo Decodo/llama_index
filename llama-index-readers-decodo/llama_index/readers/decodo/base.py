@@ -8,12 +8,13 @@ and return LlamaIndex Document objects ready for indexing or RAG pipelines.
 Environment variable
 --------------------
 DECODO_API_TOKEN : str
-    Your Decodo API token.  Can be passed explicitly to the constructors.
+    Your Decodo API key, or a basic auth token on older plans.
+    Can be passed explicitly to the constructors.
 
 Usage
 -----
 >>> from llama_index.readers.decodo import DecodoWebReader, DecodoSearchReader
->>> reader = DecodoWebReader(api_token="your-token")
+>>> reader = DecodoWebReader(api_token="your-api-key", auth_mode="token")
 >>> docs = reader.load_data(["https://example.com", "https://news.ycombinator.com"])
 """
 
@@ -110,11 +111,12 @@ class DecodoWebReader(BaseReader):
     Parameters
     ----------
     api_token : str, optional
-        Decodo API token.  Falls back to the ``DECODO_API_TOKEN`` environment
+        Decodo API key, or a basic auth token on older plans.  Falls back to the
+        ``DECODO_API_TOKEN`` environment
         variable if not provided.
     auth_mode : str
         ``"basic"`` (default) — base64-encode token and POST to ``/v2/scrape``.
-        ``"token"`` — use the token as-is and POST to ``/unified/v1/scrape``.
+        ``"token"`` — use the API key as-is and POST to ``/unified/v1/scrape``.
     timeout : float
         HTTP request timeout in seconds.  Default is 180.
 
@@ -135,7 +137,7 @@ class DecodoWebReader(BaseReader):
         token = api_token or os.environ.get("DECODO_API_TOKEN", "")
         if not token:
             raise ValueError(
-                "A Decodo API token is required.  Pass api_token= or set the "
+                "A Decodo API key or token is required.  Pass api_token= or set the "
                 "DECODO_API_TOKEN environment variable."
             )
 
@@ -244,7 +246,8 @@ class DecodoSearchReader(BaseReader):
     Parameters
     ----------
     api_token : str, optional
-        Decodo API token.  Falls back to the ``DECODO_API_TOKEN`` environment
+        Decodo API key, or a basic auth token on older plans.  Falls back to the
+        ``DECODO_API_TOKEN`` environment
         variable if not provided.
     auth_mode : str
         ``"basic"`` (default) or ``"token"``.
@@ -268,7 +271,7 @@ class DecodoSearchReader(BaseReader):
         token = api_token or os.environ.get("DECODO_API_TOKEN", "")
         if not token:
             raise ValueError(
-                "A Decodo API token is required.  Pass api_token= or set the "
+                "A Decodo API key or token is required.  Pass api_token= or set the "
                 "DECODO_API_TOKEN environment variable."
             )
 
