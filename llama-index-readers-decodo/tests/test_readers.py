@@ -135,7 +135,7 @@ class TestDecodoWebReaderLoadData:
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data(["https://example.com"])
         headers = mock_client.post.call_args[1]["headers"]
-        assert headers.get("x-integration") == "llamaindex"
+        assert headers.get("x-integration") == "llamaindex-python"
 
     def test_continue_on_error_returns_error_document(self):
         reader = DecodoWebReader(api_token="tok")
@@ -269,7 +269,7 @@ class TestDecodoSearchReaderLoadData:
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data("test")
         headers = mock_client.post.call_args[1]["headers"]
-        assert headers.get("x-integration") == "llamaindex"
+        assert headers.get("x-integration") == "llamaindex-python"
 
     def test_passes_num_results(self):
         reader = DecodoSearchReader(api_token="tok")
