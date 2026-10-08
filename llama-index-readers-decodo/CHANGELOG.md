@@ -2,6 +2,10 @@
 
 ## [0.1.3]
 
+- Send `x-integration: llamaindex-python` instead of `llamaindex` so Python LlamaIndex traffic is reported under its own integration name
+
+## [0.1.3]
+
 - README, docstrings and the missing-credential error now describe the API key first, with the basic auth token as the older-plan option
 
 ## [0.1.2]
