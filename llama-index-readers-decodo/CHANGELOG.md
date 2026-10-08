@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.3]
+
+- Send `x-integration: llamaindex-python` instead of `llamaindex` so Python LlamaIndex traffic is reported under its own integration name
+
 ## [0.1.2]
 
 - Request markdown output (`"markdown": true`) so `DecodoWebReader` and `DecodoSearchReader` return markdown instead of raw HTML

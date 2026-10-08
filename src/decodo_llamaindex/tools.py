@@ -43,7 +43,7 @@ from llama_index.core.tools.tool_spec.base import BaseToolSpec
 _V2_ENDPOINT = "https://scraper-api.decodo.com/v2/scrape"
 _UNIFIED_ENDPOINT = "https://scraper-api.decodo.com/unified/v1/scrape"
 _DEFAULT_TIMEOUT = 60.0
-_INTEGRATION_HEADER = "llamaindex"
+_INTEGRATION_HEADER = "llamaindex-python"
 _REDDIT_SITE_FILTER = "site:reddit.com"
 
 
