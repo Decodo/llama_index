@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "decodo-llamaindex"
-version = "0.1.0"
+version = "0.1.1"
 description = "Decodo Web Scraping API integration for LlamaIndex — readers and tools for scraping URLs and search engines."
 readme = "README.md"
 license = { text = "MIT" }
