@@ -12,12 +12,13 @@ pip install llama-index-tools-decodo
 
 ## Authentication
 
-Obtain your API token from the [Decodo dashboard](https://app.decodo.com).
+Copy your Web Data API key from your Web Data API subscription on the [Decodo dashboard](https://dashboard.decodo.com/web-data/playground).
+Older plans only have a basic authentication token, which also works (see below).
 
 Set it as an environment variable:
 
 ```bash
-export DECODO_API_TOKEN="your-token-here"
+export DECODO_API_TOKEN="your-api-key"
 ```
 
 Or pass it directly to the constructor.
@@ -30,8 +31,8 @@ Or pass it directly to the constructor.
 | `"token"` | plain token | `POST /unified/v1/scrape` |
 
 `"basic"` sends `Authorization: Basic <token>`; `"token"` sends `Authorization: Bearer <token>`.
-Use `"basic"` with a username/password token and `"token"` with a Unified API key (a plain hex
-string). A key used in the wrong mode is rejected with a 401.
+Use `"token"` with your API key and `"basic"` only with a basic authentication token from an older
+plan. A credential used in the wrong mode is rejected with a 401.
 
 All tools request markdown output.
 
@@ -41,7 +42,7 @@ All tools request markdown output.
 from llama_index.tools.decodo import DecodoToolSpec
 
 # Uses DECODO_API_TOKEN from environment
-spec = DecodoToolSpec()
+spec = DecodoToolSpec(auth_mode="token")
 tools = spec.to_tool_list()
 ```
 
@@ -54,7 +55,7 @@ from llama_index.core.agent.workflow import ReActAgent
 from llama_index.llms.openai import OpenAI
 from llama_index.tools.decodo import DecodoToolSpec
 
-spec = DecodoToolSpec()
+spec = DecodoToolSpec(auth_mode="token")
 tools = spec.to_tool_list()
 agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
 
@@ -74,7 +75,7 @@ asyncio.run(main())
 Scrape any web page and return its content as markdown.
 
 ```python
-spec = DecodoToolSpec(api_token="your-token")
+spec = DecodoToolSpec(api_token="your-api-key", auth_mode="token")
 content = spec.scrape_url("https://news.ycombinator.com")
 print(content)
 ```
@@ -119,14 +120,14 @@ an empty list as "no results".
 ## Auth mode examples
 
 ```python
-# Basic mode (default) — username/password token
-spec = DecodoToolSpec(api_token="your-token", auth_mode="basic")
+# API key
+spec = DecodoToolSpec(api_token="your-api-key", auth_mode="token")
 
-# Token mode — Unified API key
-spec = DecodoToolSpec(api_token="your-token", auth_mode="token")
+# Basic auth token (older plans, default)
+spec = DecodoToolSpec(api_token="your-basic-auth-token", auth_mode="basic")
 
 # Custom timeout (seconds)
-spec = DecodoToolSpec(api_token="your-token", timeout=300.0)
+spec = DecodoToolSpec(api_token="your-api-key", auth_mode="token", timeout=300.0)
 ```
 
 ## License

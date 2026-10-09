@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.3]
+
+- README, docstrings and the missing-credential error now describe the API key first, with the basic auth token as the older-plan option
+
 ## [0.1.2]
 
 - Request markdown output (`"markdown": true`) so `DecodoWebReader` and `DecodoSearchReader` return markdown instead of raw HTML

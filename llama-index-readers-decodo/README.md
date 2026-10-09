@@ -12,10 +12,11 @@ pip install llama-index-readers-decodo
 
 ## Authentication
 
-Obtain your API token from the [Decodo dashboard](https://app.decodo.com).
+Copy your Web Data API key from your Web Data API subscription on the [Decodo dashboard](https://dashboard.decodo.com/web-data/playground).
+Older plans only have a basic authentication token, which also works (see below).
 
 ```bash
-export DECODO_API_TOKEN="your-token-here"
+export DECODO_API_TOKEN="your-api-key"
 ```
 
 ### Auth modes
@@ -25,8 +26,8 @@ export DECODO_API_TOKEN="your-token-here"
 | `"basic"` (default) | `Authorization: Basic <base64(token:)>` | `POST /v2/scrape` |
 | `"token"` | `Authorization: Bearer <token>` | `POST /unified/v1/scrape` |
 
-A Unified API key (a plain hex string) only works with `auth_mode="token"`; with the default
-`"basic"` mode it is rejected with a 401. Both readers request markdown output, so
+Use `auth_mode="token"` with your API key; with the default `"basic"` mode it is rejected
+with a 401. Use `"basic"` only with a basic authentication token from an older plan. Both readers request markdown output, so
 `Document.text` is markdown rather than raw HTML.
 
 ## DecodoWebReader
@@ -36,7 +37,7 @@ Load one or more URLs as LlamaIndex `Document` objects.
 ```python
 from llama_index.readers.decodo import DecodoWebReader
 
-reader = DecodoWebReader()  # reads DECODO_API_TOKEN from env
+reader = DecodoWebReader(auth_mode="token")  # reads DECODO_API_TOKEN from env
 
 docs = reader.load_data([
     "https://news.ycombinator.com",
@@ -71,7 +72,7 @@ Run a query against Google, Amazon, or Reddit and return results as `Document` o
 ```python
 from llama_index.readers.decodo import DecodoSearchReader
 
-reader = DecodoSearchReader()
+reader = DecodoSearchReader(auth_mode="token")
 
 # Google search
 docs = reader.load_data("open source LLMs", engine="google", num_results=10)
@@ -97,17 +98,17 @@ retrying usually succeeds.
 ## Auth mode examples
 
 ```python
-# Basic mode (default)
-reader = DecodoWebReader(api_token="your-token", auth_mode="basic")
-
 # Token mode
-reader = DecodoWebReader(api_token="your-token", auth_mode="token")
+reader = DecodoWebReader(api_token="your-api-key", auth_mode="token")
+
+# Basic auth token (older plans, default)
+reader = DecodoWebReader(api_token="your-basic-auth-token", auth_mode="basic")
 
 # Custom timeout
-reader = DecodoWebReader(api_token="your-token", timeout=300.0)
+reader = DecodoWebReader(api_token="your-api-key", auth_mode="token", timeout=300.0)
 
 # Same options for DecodoSearchReader
-search_reader = DecodoSearchReader(api_token="your-token", auth_mode="token")
+search_reader = DecodoSearchReader(api_token="your-api-key", auth_mode="token")
 ```
 
 ## Use in a RAG pipeline
@@ -116,7 +117,7 @@ search_reader = DecodoSearchReader(api_token="your-token", auth_mode="token")
 from llama_index.core import VectorStoreIndex
 from llama_index.readers.decodo import DecodoWebReader
 
-reader = DecodoWebReader()
+reader = DecodoWebReader(auth_mode="token")
 docs = reader.load_data(["https://docs.example.com/guide"])
 index = VectorStoreIndex.from_documents(docs)
 query_engine = index.as_query_engine()

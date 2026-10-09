@@ -8,12 +8,13 @@ scraping and search capabilities as callable tools for LlamaIndex agents.
 Environment variable
 --------------------
 DECODO_API_TOKEN : str
-    Your Decodo API token.  Can be passed explicitly to the constructor.
+    Your Decodo API key, or a basic auth token on older plans.
+    Can be passed explicitly to the constructor.
 
 Usage
 -----
 >>> from llama_index.tools.decodo import DecodoToolSpec
->>> spec = DecodoToolSpec(api_token="your-token")
+>>> spec = DecodoToolSpec(api_token="your-api-key", auth_mode="token")
 >>> tools = spec.to_tool_list()
 """
 
@@ -61,12 +62,13 @@ class DecodoToolSpec(BaseToolSpec):
     Parameters
     ----------
     api_token : str, optional
-        Decodo API token.  Falls back to the ``DECODO_API_TOKEN`` environment
+        Decodo API key, or a basic auth token on older plans.  Falls back to the
+        ``DECODO_API_TOKEN`` environment
         variable.
     auth_mode : str
         ``"basic"`` (default) — base64-encode ``username:password`` and POST
         to ``/v2/scrape``.
-        ``"token"`` — use the token as-is and POST to ``/unified/v1/scrape``.
+        ``"token"`` — use the API key as-is and POST to ``/unified/v1/scrape``.
     timeout : float
         HTTP request timeout in seconds.  Default is 180.
     """
@@ -87,7 +89,7 @@ class DecodoToolSpec(BaseToolSpec):
         token = api_token or os.environ.get("DECODO_API_TOKEN", "")
         if not token:
             raise ValueError(
-                "A Decodo API token is required.  Pass api_token= or set the "
+                "A Decodo API key or token is required.  Pass api_token= or set the "
                 "DECODO_API_TOKEN environment variable."
             )
 

@@ -11,7 +11,8 @@ pip install llama-index-tools-decodo llama-index-llms-openai
 
 Environment variables
 ---------------------
-DECODO_API_TOKEN  — your Decodo API token
+DECODO_API_TOKEN  — your Decodo API key (or a basic auth token on older plans,
+                    then pass auth_mode="basic")
 OPENAI_API_KEY    — your OpenAI API key (used for the LLM)
 
 Run
@@ -40,7 +41,10 @@ Settings.llm = OpenAI(
 # 2. Build the Decodo tool spec and convert to LlamaIndex tools
 # ---------------------------------------------------------------------------
 
-spec = DecodoToolSpec(api_token=os.environ["DECODO_API_TOKEN"])
+spec = DecodoToolSpec(
+    api_token=os.environ["DECODO_API_TOKEN"],
+    auth_mode="token",
+)
 
 tools = spec.to_tool_list()
 
