@@ -1,4 +1,7 @@
 # Changelog
+## [0.1.4]
+
+- Send `x-integration: llamaindex-python` instead of `llamaindex` so Python LlamaIndex traffic is reported under its own integration name
 
 ## [0.1.2]
 

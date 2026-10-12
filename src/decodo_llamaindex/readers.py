@@ -28,7 +28,7 @@ from llama_index.core.schema import Document
 _V2_ENDPOINT = "https://scraper-api.decodo.com/v2/scrape"
 _UNIFIED_ENDPOINT = "https://scraper-api.decodo.com/unified/v1/scrape"
 _DEFAULT_TIMEOUT = 60.0  # seconds
-_INTEGRATION_HEADER = "llamaindex"
+_INTEGRATION_HEADER = "llamaindex-python"
 
 # Maps human-readable engine names to Decodo target identifiers.
 # Reddit uses google_search with a site:reddit.com filter — the reddit_subreddit

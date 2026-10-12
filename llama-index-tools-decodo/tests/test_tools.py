@@ -153,7 +153,7 @@ class TestScrapeUrl:
         with patch("llama_index.tools.decodo.base.httpx.Client", return_value=mock_client):
             spec.scrape_url("https://example.com")
         headers = mock_client.post.call_args[1]["headers"]
-        assert headers.get("x-integration") == "llamaindex"
+        assert headers.get("x-integration") == "llamaindex-python"
 
     def test_sends_authorization_header(self):
         spec = DecodoToolSpec(api_token="tok")
