@@ -23,8 +23,8 @@ export DECODO_API_TOKEN="your-api-key"
 
 | `auth_mode` | Header scheme | Endpoint |
 |---|---|---|
-| `"basic"` (default) | `Authorization: Basic <base64(token:)>` | `POST /v2/scrape` |
-| `"token"` | `Authorization: Bearer <token>` | `POST /unified/v1/scrape` |
+| `"basic"` (default) | `Authorization: Basic <base64(token:)>` | `POST https://scraper-api.decodo.com/v2/scrape` |
+| `"token"` | `Authorization: Bearer <token>` | `POST https://data.decodo.com/v1/scrape` |
 
 Use `auth_mode="token"` with your API key; with the default `"basic"` mode it is rejected
 with a 401. Use `"basic"` only with a basic authentication token from an older plan. Both readers request markdown output, so

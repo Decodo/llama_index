@@ -31,7 +31,7 @@ from llama_index.core.tools.tool_spec.base import BaseToolSpec
 # ---------------------------------------------------------------------------
 
 _V2_ENDPOINT = "https://scraper-api.decodo.com/v2/scrape"
-_UNIFIED_ENDPOINT = "https://scraper-api.decodo.com/unified/v1/scrape"
+_DATA_ENDPOINT = "https://data.decodo.com/v1/scrape"
 _DEFAULT_TIMEOUT = 180.0
 _INTEGRATION_HEADER = "llamaindex-python"
 
@@ -67,8 +67,8 @@ class DecodoToolSpec(BaseToolSpec):
         variable.
     auth_mode : str
         ``"basic"`` (default) — base64-encode ``username:password`` and POST
-        to ``/v2/scrape``.
-        ``"token"`` — use the API key as-is and POST to ``/unified/v1/scrape``.
+        to ``https://scraper-api.decodo.com/v2/scrape``.
+        ``"token"`` — use the API key as-is and POST to ``https://data.decodo.com/v1/scrape``.
     timeout : float
         HTTP request timeout in seconds.  Default is 180.
     """
@@ -108,7 +108,7 @@ class DecodoToolSpec(BaseToolSpec):
             self._endpoint = _V2_ENDPOINT
         else:
             self._auth_value = token
-            self._endpoint = _UNIFIED_ENDPOINT
+            self._endpoint = _DATA_ENDPOINT
 
     # ------------------------------------------------------------------
     # Internal helpers

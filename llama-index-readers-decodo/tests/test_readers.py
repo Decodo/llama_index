@@ -13,7 +13,7 @@ import pytest
 from llama_index.readers.decodo.base import (
     DecodoWebReader,
     DecodoSearchReader,
-    _UNIFIED_ENDPOINT,
+    _DATA_ENDPOINT,
     _V2_ENDPOINT,
 )
 
@@ -68,7 +68,7 @@ class TestDecodoWebReaderInit:
     def test_explicit_token_token_mode(self):
         reader = DecodoWebReader(api_token="mytoken", auth_mode="token")
         assert reader._auth_value == "mytoken"
-        assert reader._endpoint == _UNIFIED_ENDPOINT
+        assert reader._endpoint == _DATA_ENDPOINT
 
     def test_env_var_token(self, monkeypatch):
         monkeypatch.setenv("DECODO_API_TOKEN", "env-token")
@@ -121,13 +121,13 @@ class TestDecodoWebReaderLoadData:
         call_args = mock_client.post.call_args
         assert call_args[0][0] == _V2_ENDPOINT
 
-    def test_token_mode_uses_unified_endpoint(self):
+    def test_token_mode_uses_data_endpoint(self):
         reader = DecodoWebReader(api_token="tok", auth_mode="token")
         mock_client = _mock_post()
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data(["https://example.com"])
         call_args = mock_client.post.call_args
-        assert call_args[0][0] == _UNIFIED_ENDPOINT
+        assert call_args[0][0] == _DATA_ENDPOINT
 
     def test_sends_integration_header(self):
         reader = DecodoWebReader(api_token="tok")
@@ -192,7 +192,7 @@ class TestDecodoSearchReaderInit:
 
     def test_token_mode(self):
         reader = DecodoSearchReader(api_token="tok", auth_mode="token")
-        assert reader._endpoint == _UNIFIED_ENDPOINT
+        assert reader._endpoint == _DATA_ENDPOINT
 
     def test_missing_token_raises(self, monkeypatch):
         monkeypatch.delenv("DECODO_API_TOKEN", raising=False)
@@ -256,12 +256,12 @@ class TestDecodoSearchReaderLoadData:
             reader.load_data("query")
         assert mock_client.post.call_args[0][0] == _V2_ENDPOINT
 
-    def test_token_mode_uses_unified_endpoint(self):
+    def test_token_mode_uses_data_endpoint(self):
         reader = DecodoSearchReader(api_token="tok", auth_mode="token")
         mock_client = _mock_post()
         with patch("llama_index.readers.decodo.base.httpx.Client", return_value=mock_client):
             reader.load_data("query")
-        assert mock_client.post.call_args[0][0] == _UNIFIED_ENDPOINT
+        assert mock_client.post.call_args[0][0] == _DATA_ENDPOINT
 
     def test_sends_integration_header(self):
         reader = DecodoSearchReader(api_token="tok")

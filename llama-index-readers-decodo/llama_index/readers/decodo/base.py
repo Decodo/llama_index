@@ -32,7 +32,7 @@ from llama_index.core.schema import Document
 # ---------------------------------------------------------------------------
 
 _V2_ENDPOINT = "https://scraper-api.decodo.com/v2/scrape"
-_UNIFIED_ENDPOINT = "https://scraper-api.decodo.com/unified/v1/scrape"
+_DATA_ENDPOINT = "https://data.decodo.com/v1/scrape"
 _DEFAULT_TIMEOUT = 180.0
 _INTEGRATION_HEADER = "llamaindex-python"
 
@@ -61,7 +61,7 @@ def _build_auth_value(token: str, auth_mode: str) -> str:
 
 
 def _get_endpoint(auth_mode: str) -> str:
-    return _V2_ENDPOINT if auth_mode == "basic" else _UNIFIED_ENDPOINT
+    return _V2_ENDPOINT if auth_mode == "basic" else _DATA_ENDPOINT
 
 
 def _call_api(
@@ -115,8 +115,8 @@ class DecodoWebReader(BaseReader):
         ``DECODO_API_TOKEN`` environment
         variable if not provided.
     auth_mode : str
-        ``"basic"`` (default) — base64-encode token and POST to ``/v2/scrape``.
-        ``"token"`` — use the API key as-is and POST to ``/unified/v1/scrape``.
+        ``"basic"`` (default) — base64-encode token and POST to ``https://scraper-api.decodo.com/v2/scrape``.
+        ``"token"`` — use the API key as-is and POST to ``https://data.decodo.com/v1/scrape``.
     timeout : float
         HTTP request timeout in seconds.  Default is 180.
 
