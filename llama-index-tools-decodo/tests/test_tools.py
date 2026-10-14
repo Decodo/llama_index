@@ -13,7 +13,7 @@ import pytest
 
 from llama_index.tools.decodo.base import (
     DecodoToolSpec,
-    _UNIFIED_ENDPOINT,
+    _DATA_ENDPOINT,
     _V2_ENDPOINT,
 )
 
@@ -61,7 +61,7 @@ class TestInit:
     def test_explicit_token_token_mode(self):
         spec = DecodoToolSpec(api_token="mytoken", auth_mode="token")
         assert spec._auth_value == "mytoken"
-        assert spec._endpoint == _UNIFIED_ENDPOINT
+        assert spec._endpoint == _DATA_ENDPOINT
 
     def test_env_var_token(self, monkeypatch):
         monkeypatch.setenv("DECODO_API_TOKEN", "env-token")
@@ -115,13 +115,13 @@ class TestEndpointSelection:
         call_args = mock_client.post.call_args
         assert call_args[0][0] == _V2_ENDPOINT
 
-    def test_token_mode_uses_unified_endpoint(self):
+    def test_token_mode_uses_data_endpoint(self):
         spec = DecodoToolSpec(api_token="tok", auth_mode="token")
         mock_client = _mock_post()
         with patch("llama_index.tools.decodo.base.httpx.Client", return_value=mock_client):
             spec.scrape_url("https://example.com")
         call_args = mock_client.post.call_args
-        assert call_args[0][0] == _UNIFIED_ENDPOINT
+        assert call_args[0][0] == _DATA_ENDPOINT
 
 
 # ---------------------------------------------------------------------------

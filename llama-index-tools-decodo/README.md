@@ -27,8 +27,8 @@ Or pass it directly to the constructor.
 
 | `auth_mode` | Encoding | Endpoint |
 |---|---|---|
-| `"basic"` (default) | `base64("token:")` | `POST /v2/scrape` |
-| `"token"` | plain token | `POST /unified/v1/scrape` |
+| `"basic"` (default) | `base64("token:")` | `POST https://scraper-api.decodo.com/v2/scrape` |
+| `"token"` | plain token | `POST https://data.decodo.com/v1/scrape` |
 
 `"basic"` sends `Authorization: Basic <token>`; `"token"` sends `Authorization: Bearer <token>`.
 Use `"token"` with your API key and `"basic"` only with a basic authentication token from an older

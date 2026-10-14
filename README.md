@@ -157,7 +157,7 @@ The integration ships as two packages. Each takes `api_token`, `auth_mode` and `
 | Argument | Default | Description |
 |---|---|---|
 | `api_token` | `DECODO_API_TOKEN` env var | Web Data API key, or a basic auth token on older plans |
-| `auth_mode` | `"basic"` | `"basic"` sends `Authorization: Basic` to `/v2/scrape`; `"token"` sends `Authorization: Bearer` to `/unified/v1/scrape`. Use `"token"` with a Web Data API key. |
+| `auth_mode` | `"basic"` | `"basic"` sends `Authorization: Basic` to `https://scraper-api.decodo.com/v2/scrape`; `"token"` sends `Authorization: Bearer` to `https://data.decodo.com/v1/scrape`. Use `"token"` with a Web Data API key. |
 | `timeout` | `180.0` | HTTP timeout in seconds |
 
 ### `DecodoWebReader` (`llama-index-readers-decodo`)

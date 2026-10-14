@@ -1,4 +1,8 @@
 # Changelog
+## [0.1.5]
+
+- `auth_mode="token"` now sends requests to `https://data.decodo.com/v1/scrape` instead of `https://scraper-api.decodo.com/unified/v1/scrape`
+
 ## [0.1.4]
 
 - Send `x-integration: llamaindex-python` instead of `llamaindex` so Python LlamaIndex traffic is reported under its own integration name
