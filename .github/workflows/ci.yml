@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: pip install build -e "./llama-index-tools-decodo[dev]" -e "./llama-index-readers-decodo[dev]"
+
+      - name: Test tools
+        working-directory: llama-index-tools-decodo
+        run: pytest tests
+
+      - name: Test readers
+        working-directory: llama-index-readers-decodo
+        run: pytest tests
+
+      - name: Build
+        run: |
+          python -m build llama-index-tools-decodo
+          python -m build llama-index-readers-decodo

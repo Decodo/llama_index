@@ -1,32 +1,60 @@
-name: Publish llama-index-tools-decodo to PyPI
+name: Release
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
+      contents: write
       id-token: write
-      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - run: git reset --hard ${{ github.sha }}
+
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
-      - name: Build
+      - name: Install
+        run: pip install build -e "./llama-index-tools-decodo[dev]" -e "./llama-index-readers-decodo[dev]"
+
+      - name: Test tools
         working-directory: llama-index-tools-decodo
-        run: |
-          pip install build
-          python -m build
+        run: pytest tests
+
+      - name: Test readers
+        working-directory: llama-index-readers-decodo
+        run: pytest tests
+
+      - id: release
+        uses: python-semantic-release/python-semantic-release@v10.7.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit: "false"
+          changelog: "false"
+
+      - name: Build
+        if: steps.release.outputs.released == 'true'
+        run: python -m build llama-index-tools-decodo
 
       - name: Publish
+        if: steps.release.outputs.released == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: llama-index-tools-decodo/dist/

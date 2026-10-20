@@ -1,32 +1,50 @@
 name: Publish llama-index-readers-decodo to PyPI
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   publish:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - id: version
+        run: |
+          tag=$(git tag --points-at HEAD --list 'v*' | head -n 1)
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v7
+        if: steps.version.outputs.version != ''
         with:
           python-version: "3.12"
 
       - name: Build
-        working-directory: llama-index-readers-decodo
+        if: steps.version.outputs.version != ''
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
+          sed -i "s/^version = \"0.0.0\"$/version = \"$VERSION\"/" llama-index-readers-decodo/pyproject.toml
+          grep -q "^version = \"$VERSION\"$" llama-index-readers-decodo/pyproject.toml
           pip install build
-          python -m build
+          python -m build llama-index-readers-decodo
 
       - name: Publish
+        if: steps.version.outputs.version != ''
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: llama-index-readers-decodo/dist/
