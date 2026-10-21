@@ -45,3 +45,14 @@ include = [
     "README.md",
     "pyproject.toml",
 ]
+
+[tool.semantic_release]
+version_toml = [
+    "llama-index-tools-decodo/pyproject.toml:project.version",
+    "llama-index-readers-decodo/pyproject.toml:project.version",
+]
+commit_parser = "conventional"
+allow_zero_version = true
+
+[tool.semantic_release.branches.main]
+match = "main"
